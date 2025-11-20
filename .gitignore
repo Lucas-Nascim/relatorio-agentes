@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Byte-compiled / distribution
+build/
+dist/
+*.egg-info/
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
+
+# Node
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Certificates and keys
+*.pfx
+
+# OneDrive/temp and system files
+~$*
