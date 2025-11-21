@@ -36,3 +36,10 @@ desktop.ini
 
 # OneDrive/temp and system files
 ~$*
+
+# Authentication and sensitive data
+auth_config.json
+.env
+.env.local
+secrets.toml
+

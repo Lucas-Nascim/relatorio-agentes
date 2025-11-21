@@ -2,11 +2,31 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 from pathlib import Path
+from auth import login, logout, obter_usuario_atual
 
-# Configurar página
+# Configurar página (será reconfigurado após login)
 st.set_page_config(page_title="Relatório de Agentes", layout="wide")
 
+# Verificar autenticação
+if not login():
+    st.stop()
+
+# Reconfigura página após login bem-sucedido
+st.set_page_config(page_title="Relatório de Agentes", layout="wide")
+
+# Obter usuário atual
+usuario_atual = obter_usuario_atual()
+
 st.title("📊 Relatório de Agentes - TMA")
+
+# Exibir informações do usuário logado na barra lateral
+with st.sidebar:
+    st.markdown(f"**👤 Usuário:** {usuario_atual['name']}")
+    st.markdown(f"**📧 Email:** {usuario_atual['email']}")
+    st.markdown(f"**💼 Cargo:** {usuario_atual['role']}")
+    st.markdown("---")
+    if st.button("🚪 Logout"):
+        logout()
 
 # Local esperado do arquivo dentro do repositório (relativo ao arquivo Python)
 DATA_PATH = Path(__file__).parent / "data" / "Base_DBM.xlsx"
