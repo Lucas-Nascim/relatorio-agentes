@@ -1,20 +1,48 @@
 import pandas as pd
 import streamlit as st
 from datetime import datetime
+from pathlib import Path
 
 # Configurar página
 st.set_page_config(page_title="Relatório de Agentes", layout="wide")
 
 st.title("📊 Relatório de Agentes - TMA")
 
-# Cache com refresh automático a cada 5 minutos
+# Local esperado do arquivo dentro do repositório (relativo ao arquivo Python)
+DATA_PATH = Path(__file__).parent / "data" / "Base_DBM.xlsx"
+
+
+# função pura para ler o excel (cacheável)
 @st.cache_data(ttl=300)
-def carregar_dados():
-    df = pd.read_excel(r'C:\Users\cliente\OneDrive\Desktop\Excel\02 - Cases\Base_DBM.xlsx', sheet_name='dados')
-    return df
+def carregar_dados_de_buffer(buffer):
+    # buffer pode ser um caminho (str/Path) ou um file-like (uploaded)
+    return pd.read_excel(buffer, sheet_name='dados')
+
+
+def obter_dados():
+    # 1) se existir arquivo em data/, usa ele
+    if DATA_PATH.exists():
+        try:
+            return carregar_dados_de_buffer(DATA_PATH)
+        except Exception as e:
+            st.error(f"Erro ao ler '{DATA_PATH}': {e}")
+
+    # 2) senão, solicitar upload do arquivo pelo usuário
+    st.warning("Arquivo de dados não encontrado em 'data/Base_DBM.xlsx'. Faça upload do arquivo Excel (.xlsx) usado pelo app.")
+    uploaded = st.file_uploader("Faça upload do Base_DBM.xlsx (sheet: 'dados')", type=["xlsx"])
+    if uploaded is None:
+        st.info("Aguardando upload do arquivo para continuar.")
+        st.stop()
+
+    try:
+        return carregar_dados_de_buffer(uploaded)
+    except Exception as e:
+        st.error(f"Erro ao ler arquivo enviado: {e}")
+        st.stop()
+
 
 # Carregar dados
-df = carregar_dados()
+df = obter_dados()
 
 colunas_tempo = [
     'Tempo_em_Servico', 'Tempo_DAC', 'Tempo_POS_AT', 'Tempo_tocando', 
@@ -43,14 +71,26 @@ totais_por_grupo['TMA'] = totais_por_grupo['TMA'].fillna(0)
 # Calcula TMA médio ANTES de converter para hh:mm:ss
 tma_medio_segundos = totais_por_grupo['TMA'].mean()
 
-# Converte TMA para hh:mm:ss
+
+# Converte TMA para hh:mm:ss com proteção para valores inválidos/NaN
 def segundos_para_hms(segundos):
+    try:
+        segundos = float(segundos)
+    except Exception:
+        segundos = 0
+    if pd.isna(segundos):
+        segundos = 0
     horas = int(segundos // 3600)
     minutos = int((segundos % 3600) // 60)
     segs = int(segundos % 60)
     return f'{horas:02d}:{minutos:02d}:{segs:02d}'
 
 totais_por_grupo['TMA'] = totais_por_grupo['TMA'].apply(segundos_para_hms)
+
+# proteger caso média seja NaN
+if pd.isna(tma_medio_segundos):
+    tma_medio_segundos = 0
+
 tma_medio_formatado = segundos_para_hms(tma_medio_segundos)
 
 # Seleciona apenas as colunas desejadas
