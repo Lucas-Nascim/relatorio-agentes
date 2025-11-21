@@ -10,6 +10,7 @@ st.title("📊 Relatório de Agentes - TMA")
 
 # Local esperado do arquivo dentro do repositório (relativo ao arquivo Python)
 DATA_PATH = Path(__file__).parent / "data" / "Base_DBM.xlsx"
+CSV_PATH = Path(__file__).parent / "data" / "Base_DBM.csv"
 
 
 # função pura para ler o excel (cacheável)
@@ -27,6 +28,13 @@ def obter_dados():
         except Exception as e:
             st.error(f"Erro ao ler '{DATA_PATH}': {e}")
 
+    # 1b) se existir CSV de exemplo, usa ele (útil para deploy/ambientes sem Excel)
+    if CSV_PATH.exists():
+        try:
+            return pd.read_csv(CSV_PATH)
+        except Exception as e:
+            st.error(f"Erro ao ler '{CSV_PATH}': {e}")
+
     # 2) senão, solicitar upload do arquivo pelo usuário
     st.warning("Arquivo de dados não encontrado em 'data/Base_DBM.xlsx'. Faça upload do arquivo Excel (.xlsx) usado pelo app.")
     uploaded = st.file_uploader("Faça upload do Base_DBM.xlsx (sheet: 'dados')", type=["xlsx"])
@@ -35,6 +43,9 @@ def obter_dados():
         st.stop()
 
     try:
+        # se o usuário enviou um xlsx, o buffer será lido pela função cacheada
+        if uploaded.name.lower().endswith('.csv'):
+            return pd.read_csv(uploaded)
         return carregar_dados_de_buffer(uploaded)
     except Exception as e:
         st.error(f"Erro ao ler arquivo enviado: {e}")
